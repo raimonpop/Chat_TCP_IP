@@ -27,22 +27,34 @@ public class HelloController implements Initializable {
     @FXML
     private TextField serverIPField;
 
+    // Variables para la comunicación entre el servidor y el cliente
     private ServerSocket serverSocket;
     private Socket clientSocket;
     private BufferedReader in;
     private PrintWriter out;
+
+    // Bandera para controlar el estado del servidor
     private volatile boolean serverRunning = false;
+
+    // Mensaje de cierre del servidor
     private static final String SERVER_SHUTDOWN_MESSAGE = "SERVER_SHUTDOWN";
 
+    /**
+     * Método para inicializar las variables al inicio de la aplicación
+     * @param url
+     * @param resourceBundle
+     */
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        // Inicializa las variables aquí
         serverSocket = null;
         clientSocket = null;
         in = null;
         out = null;
     }
 
+    /**
+     * Método para manejar el envío de mensajes
+     */
     @FXML
     private void handleSendButtonAction() {
         String message = messageField.getText();
@@ -56,6 +68,9 @@ public class HelloController implements Initializable {
         }
     }
 
+    /**
+     * Método para manejar la conexión al servidor
+     */
     @FXML
     private void handleConnectButtonAction() {
         String serverIP = serverIPField.getText();
@@ -68,6 +83,9 @@ public class HelloController implements Initializable {
         }
     }
 
+    /**
+     * Método para manejar el inicio del servidor
+     */
     @FXML
     private void handleStartServerButtonAction() {
         int serverPort = 12345; // Asegúrate de utilizar el mismo puerto que el cliente
@@ -75,6 +93,9 @@ public class HelloController implements Initializable {
         startServer(serverPort);
     }
 
+    /**
+     * Método para manejar la detención del servidor
+     */
     @FXML
     private void handleStopServerButtonAction() {
         if (serverSocket != null && !serverSocket.isClosed()) {
@@ -91,7 +112,10 @@ public class HelloController implements Initializable {
         }
     }
 
-
+    /**
+     * Método para iniciar el servidor
+     * @param serverPort
+     */
     public void startServer(int serverPort) {
         new Thread(() -> {
             try {
@@ -135,6 +159,11 @@ public class HelloController implements Initializable {
         }).start();
     }
 
+    /**
+     * Método para conectar al servidor
+     * @param host
+     * @param port
+     */
     private void connectToServer(String host, int port) {
         new Thread(() -> {
             try {
