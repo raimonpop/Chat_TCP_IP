@@ -28,6 +28,7 @@
                 <TextField fx:id="serverIPField" prefWidth="150"/>
                 <Button text="Conectar" onAction="#handleConnectButtonAction"/>
                 <Button text="Iniciar Servidor" onAction="#handleStartServerButtonAction"/>
+                <Button text="Detener Servidor" onAction="#handleStopServerButtonAction"/>
             </HBox>
         </VBox>
     </center>

@@ -4,14 +4,19 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
+import java.util.ResourceBundle;
+
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
-public class HelloController {
+public class HelloController implements Initializable {
 
     @FXML
     private TextArea messagesArea;
@@ -26,10 +31,16 @@ public class HelloController {
     private Socket clientSocket;
     private BufferedReader in;
     private PrintWriter out;
+    private volatile boolean serverRunning = false;
+    private static final String SERVER_SHUTDOWN_MESSAGE = "SERVER_SHUTDOWN";
 
-    public void initialize() {
-        // Inicializar serverSocket, clientSocket, in y out aquí, si es necesario.
-        // También puedes iniciar el servidor o conectarte a un servidor existente aquí.
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+        // Inicializa las variables aquí
+        serverSocket = null;
+        clientSocket = null;
+        in = null;
+        out = null;
     }
 
     @FXML
@@ -64,21 +75,62 @@ public class HelloController {
         startServer(serverPort);
     }
 
-    private void startServer(int port) {
+    @FXML
+    private void handleStopServerButtonAction() {
+        if (serverSocket != null && !serverSocket.isClosed()) {
+            try {
+                if (out != null) {
+                    out.println(SERVER_SHUTDOWN_MESSAGE);
+                }
+                serverRunning = false;
+                serverSocket.close();
+                messagesArea.appendText("Servidor detenido.\n");
+            } catch (IOException e) {
+                messagesArea.appendText("Error: No se pudo detener el servidor.\n");
+            }
+        }
+    }
+
+
+    public void startServer(int serverPort) {
         new Thread(() -> {
             try {
-                serverSocket = new ServerSocket(port);
+                serverSocket = new ServerSocket(serverPort);
+                messagesArea.appendText("Esperando conexión en el puerto " + serverPort + "...\n");
+
                 clientSocket = serverSocket.accept();
+                messagesArea.appendText("Cliente conectado: " + clientSocket.getInetAddress().getHostAddress() + "\n");
+
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
 
                 String inputLine;
-                while ((inputLine = in.readLine()) != null) {
-                    String finalInputLine = inputLine;
-                    Platform.runLater(() -> messagesArea.appendText("Cliente: " + finalInputLine + "\n"));
+                serverRunning = true;
+                while (serverRunning && (inputLine = in.readLine()) != null) {
+                    if (SERVER_SHUTDOWN_MESSAGE.equals(inputLine)) {
+                        serverRunning = false;
+                        messagesArea.appendText("El servidor ha sido detenido.\n");
+                    } else {
+                        messagesArea.appendText("Cliente: " + inputLine + "\n");
+                    }
                 }
+            } catch (BindException e) {
+                Platform.runLater(() -> messagesArea.appendText("Error: No se pudo iniciar el servidor en el puerto " + serverPort + ". El puerto ya está en uso.\n"));
             } catch (IOException e) {
-                e.printStackTrace();
+                if (!serverRunning) {
+                    Platform.runLater(() -> messagesArea.appendText("El servidor fue detenido correctamente.\n"));
+                } else {
+                    Platform.runLater(() -> messagesArea.appendText("Error: Hubo un problema al iniciar el servidor o durante la comunicación.\n"));
+                }
+            } finally {
+                try {
+                    if (in != null) in.close();
+                    if (out != null) out.close();
+                    if (clientSocket != null) clientSocket.close();
+                    if (serverSocket != null) serverSocket.close();
+                } catch (IOException e) {
+                    Platform.runLater(() -> messagesArea.appendText("Error: Hubo un problema al cerrar los recursos del servidor.\n"));
+                }
             }
         }).start();
     }
@@ -87,17 +139,25 @@ public class HelloController {
         new Thread(() -> {
             try {
                 clientSocket = new Socket(host, port);
+                messagesArea.appendText("Conectado al servidor en " + host + ":" + port + "\n");
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
 
                 String inputLine;
-                while ((inputLine = in.readLine()) != null) {
-                    String finalInputLine = inputLine;
-                    Platform.runLater(() -> messagesArea.appendText("Servidor: " + finalInputLine + "\n"));
+                serverRunning = true;
+                while (serverRunning && (inputLine = in.readLine()) != null) {
+                    if (SERVER_SHUTDOWN_MESSAGE.equals(inputLine)) {
+                        serverRunning = false;
+                        messagesArea.appendText("El servidor ha sido detenido.\n");
+                    } else {
+                        messagesArea.appendText("Servidor: " + inputLine + "\n");
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }).start();
     }
+
+
 }
