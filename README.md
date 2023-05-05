@@ -35,7 +35,3 @@ Este proyecto es una aplicación de chat simple que utiliza sockets TCP/IP para 
 ## Contribuciones
 
 Las contribuciones son bienvenidas. Siéntete libre de abrir un issue o crear un Pull Request para proponer mejoras o solucionar errores en el proyecto.
-
-## Licencia
-
-Este proyecto está licenciado bajo los términos de la licencia MIT. Consulta el archivo [LICENSE](LICENSE) para obtener más información.
